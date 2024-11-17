@@ -6,6 +6,7 @@
 curl -sSL https://raw.githubusercontent.com/wixxm/wikjxwrt-auto/main/go.sh -o go-24.10.sh && bash go-24.10.sh
 ```
 ✨ 一键编译(自行拉库)
+```
 curl -sSL https://raw.githubusercontent.com/wixxm/wikjxwrt-auto/main/start.sh -o start-24.10.sh && bash start-24.10.sh
 ```
 ✨ 一键更新（一键更新固件编译）
