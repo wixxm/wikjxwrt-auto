@@ -1,6 +1,5 @@
 🎉自动化完成编译🎉
 
-## ✨ 食用方法  ✨
 🌈 一键完全开始 24.10分支（从拉库开始）
 ```
 curl -sSL https://raw.githubusercontent.com/wixxm/wikjxwrt-auto/main/go.sh -o go-24.10.sh && bash go-24.10.sh
