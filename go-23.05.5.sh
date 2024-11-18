@@ -156,6 +156,7 @@ echo -e "$ICON_SUCCESS golang 替换完成。"
 section "安装 feeds"
 info "安装 feeds..."
 ./scripts/feeds install -a || error "第一次 feeds 安装失败！"
+info "再次安装 feeds..."
 ./scripts/feeds install -a || error "第二次 feeds 安装失败！"
 echo -e "$ICON_SUCCESS feeds 安装完成。"
 
