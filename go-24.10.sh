@@ -1,35 +1,51 @@
 #!/bin/bash
 
-# 定义颜色输出函数
+# 定义颜色和状态图标
+RESET="\033[0m"
+GREEN="\033[1;32m"
+YELLOW="\033[1;33m"
+RED="\033[1;31m"
+CYAN="\033[1;36m"
+BOLD="\033[1m"
+
+ICON_SUCCESS="[${GREEN}✓${RESET}]"
+ICON_WARN="[${YELLOW}⚠${RESET}]"
+ICON_ERROR="[${RED}✗${RESET}]"
+ICON_PROGRESS="[${CYAN}...${RESET}]"
+
+# 输出函数
 info() {
-    echo -e "\033[1;32m[INFO]\033[0m $1"
+    echo -e "${GREEN}[INFO]${RESET} $1"
 }
 warn() {
-    echo -e "\033[1;33m[WARN]\033[0m $1"
+    echo -e "${YELLOW}[WARN]${RESET} $1"
 }
 error() {
-    echo -e "\033[1;31m[ERROR]\033[0m $1"
+    echo -e "${RED}[ERROR]${RESET} $1"
     exit 1
+}
+section() {
+    echo -e "\n${CYAN}========== $1 ==========${RESET}\n"
 }
 
 # 默认配置
-CORES=$(nproc)  # 默认使用 CPU 核心数
-SKIP_FEEDS=0    # 默认不跳过 feeds 更新
-SKIP_COMPILE=0  # 默认不跳过编译
+CORES=$(nproc)
+SKIP_FEEDS=0
+SKIP_COMPILE=0
 FEEDS_FILE="feeds.conf.default"
 WIKJXWRT_ENTRY="src-git wikjxwrt https://github.com/wixxm/wikjxwrt-packages"
 WIKJXWRT_SSH_REPO="https://github.com/wixxm/WikjxWrt-ssh"
 SYSINFO_TARGET="feeds/packages/utils/bash/files/etc/profile.d/sysinfo.sh"
 TURBOACC_SCRIPT="https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh"
 WIKJXWRTR_CONFIG_REPO="https://github.com/wixxm/wikjxwrtr-config"
-OPENWRT_REPO="https://github.com/wixxm/openwrt-24.10"
+OPENWRT_REPO="https://github.com/wixxm/OpenWrt-24.10"
 
 # 显示帮助信息
 usage() {
     cat <<EOF
-用法: $0 [-j <线程数>] [--skip-feeds] [--skip-compile]
+${BOLD}用法:${RESET} $0 [-j <线程数>] [--skip-feeds] [--skip-compile]
 
-选项:
+${BOLD}选项:${RESET}
   -j <线程数>       指定编译时使用的并发线程数，默认 $(nproc)
   --skip-feeds      跳过 feeds 更新步骤
   --skip-compile    跳过编译步骤
@@ -37,7 +53,7 @@ usage() {
 EOF
 }
 
-# 参数解析
+# 解析参数
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -j)
@@ -62,94 +78,106 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# 检查依赖工具
+# 环境检查
+section "环境检查"
 info "检查必要工具..."
 for tool in git make sed curl; do
-    if ! command -v "$tool" &>/dev/null; then
-        error "缺少工具: $tool，请安装后重试。"
+    if command -v "$tool" &>/dev/null; then
+        echo -e "$ICON_SUCCESS 工具已安装: $tool"
+    else
+        echo -e "$ICON_ERROR 缺少工具: $tool，请安装后重试。"
+        exit 1
     fi
 done
-info "环境检查通过。"
+echo -e "$ICON_SUCCESS 环境检查通过。"
 
 # 克隆 OpenWrt 源码
+section "克隆 OpenWrt 源码"
 if [[ ! -d "openwrt" ]]; then
     info "克隆 OpenWrt 源码仓库..."
     git clone "$OPENWRT_REPO" openwrt || error "克隆 OpenWrt 仓库失败！"
+    echo -e "$ICON_SUCCESS OpenWrt 仓库克隆成功"
 else
-    warn "OpenWrt 仓库已存在，无需重新克隆。"
+    echo -e "$ICON_WARN OpenWrt 仓库已存在，无需重新克隆。"
 fi
 
 # 进入 OpenWrt 文件夹
 cd openwrt || error "进入 openwrt 文件夹失败！"
 
 # 添加自定义 feeds
+section "自定义 feeds 处理"
 info "检查和修改 $FEEDS_FILE..."
 if ! grep -q "^$WIKJXWRT_ENTRY" "$FEEDS_FILE"; then
     echo "$WIKJXWRT_ENTRY" >>"$FEEDS_FILE"
-    info "添加自定义 feeds: $WIKJXWRT_ENTRY"
+    echo -e "$ICON_SUCCESS 添加自定义 feeds: $WIKJXWRT_ENTRY"
 else
-    warn "$FEEDS_FILE 中已包含 $WIKJXWRT_ENTRY，无需重复添加。"
+    echo -e "$ICON_WARN feeds 已存在，无需重复添加。"
 fi
 
 # 更新 feeds
 if [[ $SKIP_FEEDS -eq 0 ]]; then
     info "更新 feeds..."
     ./scripts/feeds update -a || error "feeds 更新失败！"
+    echo -e "$ICON_SUCCESS feeds 更新完成。"
 else
-    warn "跳过 feeds 更新步骤。"
+    echo -e "$ICON_WARN 跳过 feeds 更新步骤。"
 fi
 
-# 删除默认 coremark 并替换为自定义版本
-info "替换 coremark..."
+# 替换 coremark
+section "替换 coremark"
+info "删除默认 coremark 并替换为自定义版本..."
 rm -rf feeds/packages/utils/coremark
 git clone https://github.com/wixxm/wikjxwrt-coremark feeds/packages/utils/coremark || error "克隆 coremark 仓库失败！"
+echo -e "$ICON_SUCCESS coremark 替换完成。"
 
-# 处理 sysinfo.sh
+# 配置 sysinfo.sh
+section "配置 sysinfo.sh"
 info "下载并配置 sysinfo.sh..."
 git clone "$WIKJXWRT_SSH_REPO" temp_ssh_repo || error "克隆 $WIKJXWRT_SSH_REPO 仓库失败！"
 mkdir -p "$(dirname $SYSINFO_TARGET)"
 mv temp_ssh_repo/sysinfo.sh "$SYSINFO_TARGET" || error "移动 sysinfo.sh 失败！"
 rm -rf temp_ssh_repo
-info "sysinfo.sh 配置完成。"
+echo -e "$ICON_SUCCESS sysinfo.sh 配置完成。"
 
 # 添加 Turbo ACC
-info "添加 Turbo ACC..."
+section "添加 Turbo ACC"
+info "下载并执行 Turbo ACC 安装脚本..."
 curl -sSL "$TURBOACC_SCRIPT" -o add_turboacc.sh && bash add_turboacc.sh || error "添加 Turbo ACC 失败！"
+echo -e "$ICON_SUCCESS Turbo ACC 添加完成。"
+
 
 # 安装 feeds
+section "安装 feeds"
 info "安装 feeds..."
 ./scripts/feeds install -a || error "第一次 feeds 安装失败！"
-info "再次安装 feeds..."
 ./scripts/feeds install -a || error "第二次 feeds 安装失败！"
+echo -e "$ICON_SUCCESS feeds 安装完成。"
 
-# 注释自定义 feeds
-info "注释自定义 feeds..."
-sed -i "s|^$WIKJXWRT_ENTRY|#$WIKJXWRT_ENTRY|" "$FEEDS_FILE" || error "注释自定义 feeds 失败！"
-
-# 配置 .config 文件
+# 配置 .config
+section "配置 .config 文件"
 info "下载并配置 .config..."
-git clone "$WIKJXWRTR_CONFIG_REPO" temp_config_repo || error "克隆 $WIKJXWRTR_CONFIG_REPO 仓库失败！"
+git clone "$WIKJXWRTR_CONFIG_REPO" temp_config_repo || error "克隆配置仓库失败！"
 mv temp_config_repo/6.6/.config ./ || error "移动 .config 文件失败！"
 rm -rf temp_config_repo
-info ".config 配置完成。"
-
-# 自动同步配置
-info "自动同步配置文件..."
 make defconfig || error "同步配置文件失败！"
+echo -e "$ICON_SUCCESS .config 配置完成。"
 
-# 下载编译所需的文件
-info "下载编译所需文件..."
-make download -j"$CORES" || error "文件下载失败！"
+# 下载编译所需文件
+section "下载编译所需文件"
+info "下载依赖文件..."
+make download -j"$CORES" || error "依赖文件下载失败！"
+echo -e "$ICON_SUCCESS 依赖文件下载完成。"
 
 # 编译 OpenWrt
 if [[ $SKIP_COMPILE -eq 0 ]]; then
+    section "编译 OpenWrt"
     info "开始编译 OpenWrt..."
     make V=s -j"$CORES" || error "编译过程中发生错误！"
-    info "编译完成！"
-    info "生成的固件位于以下目录："
-    echo -e "\033[1;34m/bin/targets/x86/64/packages\033[0m"
+    echo -e "$ICON_SUCCESS 编译完成！"
+    echo -e "固件文件位于：${BOLD}/bin/targets/x86/64/packages${RESET}"
 else
-    warn "跳过编译步骤。"
+    echo -e "$ICON_WARN 跳过编译步骤。"
 fi
 
-info "所有任务完成！"
+section "所有任务完成"
+info "🎉 所有任务已完成！请检查生成的固件文件。"
