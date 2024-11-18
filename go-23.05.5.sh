@@ -164,6 +164,7 @@ echo -e "$ICON_SUCCESS feeds 安装完成。"
 section "注释自定义 feeds"
 info "注释自定义 feeds..."
 sed -i "s|^$WIKJXWRT_ENTRY|#$WIKJXWRT_ENTRY|" "$FEEDS_FILE" || error "注释自定义 feeds 失败！"
+echo -e "$ICON_SUCCESS 注释自定义 feeds完成。"
 
 # 配置 .config
 section "配置 .config 文件"
