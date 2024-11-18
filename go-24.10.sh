@@ -145,7 +145,6 @@ info "下载并执行 Turbo ACC 安装脚本..."
 curl -sSL "$TURBOACC_SCRIPT" -o add_turboacc.sh && bash add_turboacc.sh || error "添加 Turbo ACC 失败！"
 echo -e "$ICON_SUCCESS Turbo ACC 添加完成。"
 
-
 # 安装 feeds
 section "安装 feeds"
 info "安装 feeds..."
@@ -153,6 +152,10 @@ info "安装 feeds..."
 info "再次安装 feeds..."
 ./scripts/feeds install -a || error "第二次 feeds 安装失败！"
 echo -e "$ICON_SUCCESS feeds 安装完成。"
+
+# 注释自定义 feeds
+info "注释自定义 feeds..."
+sed -i "s|^$WIKJXWRT_ENTRY|#$WIKJXWRT_ENTRY|" "$FEEDS_FILE" || error "注释自定义 feeds 失败！"
 
 # 配置 .config
 section "配置 .config 文件"
