@@ -116,6 +116,12 @@ info "sysinfo.sh 配置完成。"
 info "添加 Turbo ACC..."
 curl -sSL "$TURBOACC_SCRIPT" -o add_turboacc.sh && bash add_turboacc.sh || error "添加 Turbo ACC 失败！"
 
+# 删除默认 golang 并替换为自定义版本
+info "替换 golang..."
+rm -rf feeds/packages/lang/golang
+git clone https://github.com/wixxm/WikjxWrt-golang feeds/packages/lang/golang || error "克隆 golang 仓库失败！"
+info "golang 替换完成。"
+
 # 安装 feeds
 info "安装 feeds..."
 ./scripts/feeds install -a || error "第一次 feeds 安装失败！"
@@ -150,6 +156,6 @@ if [[ $SKIP_COMPILE -eq 0 ]]; then
     echo -e "\033[1;34m/bin/targets/x86/64/packages\033[0m"
 else
     warn "跳过编译步骤。"
-fi
+fi   
 
 info "所有任务完成！"
