@@ -32,7 +32,6 @@ CORES=$(nproc)
 SKIP_FEEDS=0
 SKIP_COMPILE=0
 FEEDS_FILE="feeds.conf.default"
-WIKJXWRT_ENTRY="src-git wikjxwrt https://github.com/wixxm/wikjxwrt-packages"
 
 # 显示帮助信息
 usage() {
@@ -95,16 +94,13 @@ else
     exit 1
 fi
 
-# 修改 feeds.conf.default 文件
+# 修改 feeds.conf.default 文件的最后一行
 section "修改 feeds 配置"
 info "检查和修改 $FEEDS_FILE..."
 if [[ -f $FEEDS_FILE ]]; then
-    if ! grep -q "^$WIKJXWRT_ENTRY" "$FEEDS_FILE"; then
-        echo "$WIKJXWRT_ENTRY" >>"$FEEDS_FILE"
-        echo -e "$ICON_SUCCESS 添加自定义 feeds: $WIKJXWRT_ENTRY"
-    else
-        echo -e "$ICON_WARN feeds 已存在，无需重复添加。"
-    fi
+    # 去掉最后一行的注释
+    sed -i '$s/^#//' "$FEEDS_FILE"
+    echo -e "$ICON_SUCCESS 已去掉 $FEEDS_FILE 中最后一行的注释。"
 else
     echo -e "$ICON_ERROR $FEEDS_FILE 文件不存在！"
     exit 1
@@ -124,13 +120,13 @@ else
     echo -e "$ICON_WARN 跳过 feeds 更新步骤。"
 fi
 
-# 恢复 feeds.conf.default 文件
+# 恢复 feeds.conf.default 文件的最后一行注释
 section "恢复 feeds 配置"
 info "恢复 $FEEDS_FILE 中的注释..."
-if sed -i "s|^$WIKJXWRT_ENTRY|#$WIKJXWRT_ENTRY|" "$FEEDS_FILE"; then
-    echo -e "$ICON_SUCCESS $FEEDS_FILE 恢复完成。"
+if sed -i '$s/^/#/' "$FEEDS_FILE"; then
+    echo -e "$ICON_SUCCESS $FEEDS_FILE 中的最后一行注释已恢复。"
 else
-    echo -e "$ICON_ERROR $FEEDS_FILE 恢复失败！"
+    echo -e "$ICON_ERROR 恢复 $FEEDS_FILE 中的最后一行注释失败！"
     exit 1
 fi
 
@@ -140,7 +136,7 @@ if [[ $SKIP_COMPILE -eq 0 ]]; then
     info "开始编译 OpenWrt..."
     if make V=s -j"$CORES"; then
         echo -e "$ICON_SUCCESS 编译完成！"
-        echo -e "固件文件位于：${BOLD}/bin/targets/x86/64/packages${RESET}"
+        echo -e "固件文件位于：/bin/targets/x86/64/packages"
     else
         echo -e "$ICON_ERROR 编译过程中发生错误！"
         exit 1
