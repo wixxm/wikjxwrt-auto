@@ -145,6 +145,14 @@ info "下载并执行 Turbo ACC 安装脚本..."
 curl -sSL "$TURBOACC_SCRIPT" -o add_turboacc.sh && bash add_turboacc.sh || error "添加 Turbo ACC 失败！"
 echo -e "$ICON_SUCCESS Turbo ACC 添加完成。"
 
+# 替换 v2ray-geodata
+section "替换 v2ray-geodata"
+info "删除默认的 v2ray-geodata..."
+rm -rf feeds/packages/net/v2ray-geodata || warn "删除默认 v2ray-geodata 失败，可能不存在。"
+info "克隆新的 v2ray-geodata 仓库..."
+git clone https://github.com/sbwml/v2ray-geodata package/v2ray-geodata || error "克隆 v2ray-geodata 仓库失败！"
+echo -e "$ICON_SUCCESS v2ray-geodata 替换完成。"
+
 # 安装 feeds
 section "安装 feeds"
 info "安装 feeds..."
@@ -157,7 +165,7 @@ echo -e "$ICON_SUCCESS feeds 安装完成。"
 section "注释自定义 feeds"
 info "注释自定义 feeds..."
 sed -i "s|^$WIKJXWRT_ENTRY|#$WIKJXWRT_ENTRY|" "$FEEDS_FILE" || error "注释自定义 feeds 失败！"
-echo -e "$ICON_SUCCESS 注释自定义 feeds完成。"
+echo -e "$ICON_SUCCESS 注释自定义 feeds 完成。"
 
 # 配置 .config
 section "配置 .config 文件"
@@ -180,7 +188,11 @@ if [[ $SKIP_COMPILE -eq 0 ]]; then
     info "开始编译 OpenWrt..."
     make V=s -j"$CORES" || error "编译过程中发生错误！"
     echo -e "$ICON_SUCCESS 编译完成！"
-    echo -e "固件文件位于：${BOLD}/bin/targets/x86/64/packages${RESET}"
+    
+    # 输出固件文件位置
+    FIRMWARE_PATH="./bin/targets"
+    echo -e "\n${BOLD}编译生成的固件位置:${RESET}"
+    find "$FIRMWARE_PATH" -type f -name "*.bin" -exec echo -e "$ICON_SUCCESS {}" \;
 else
     echo -e "$ICON_WARN 跳过编译步骤。"
 fi
