@@ -34,6 +34,8 @@ SKIP_FEEDS=0
 SKIP_COMPILE=0
 FEEDS_FILE="feeds.conf.default"
 WIKJXWRT_ENTRY="src-git wikjxwrt https://github.com/wixxm/wikjxwrt-packages"
+PASSWALL_PACKAGES_ENTRY="src-git passwall_packages https://github.com/xiaorouji/openwrt-passwall-packages.git;main"
+PASSWALL_ENTRY="src-git passwall https://github.com/xiaorouji/openwrt-passwall.git;main"
 WIKJXWRT_SSH_REPO="https://github.com/wixxm/WikjxWrt-ssh"
 SYSINFO_TARGET="feeds/packages/utils/bash/files/etc/profile.d/sysinfo.sh"
 TURBOACC_SCRIPT="https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh"
@@ -107,12 +109,14 @@ cd openwrt || error "进入 openwrt 文件夹失败！"
 # 添加自定义 feeds
 section "自定义 feeds 处理"
 info "检查和修改 $FEEDS_FILE..."
-if ! grep -q "^$WIKJXWRT_ENTRY" "$FEEDS_FILE"; then
-    echo "$WIKJXWRT_ENTRY" >>"$FEEDS_FILE"
-    echo -e "$ICON_SUCCESS 添加自定义 feeds: $WIKJXWRT_ENTRY"
-else
-    echo -e "$ICON_WARN feeds 已存在，无需重复添加。"
-fi
+for entry in "$WIKJXWRT_ENTRY" "$PASSWALL_PACKAGES_ENTRY" "$PASSWALL_ENTRY"; do
+    if ! grep -q "^$entry" "$FEEDS_FILE"; then
+        echo "$entry" >>"$FEEDS_FILE"
+        echo -e "$ICON_SUCCESS 添加自定义 feeds: $entry"
+    else
+        echo -e "$ICON_WARN feeds 已存在: $entry，无需重复添加。"
+    fi
+done
 
 # 更新 feeds
 if [[ $SKIP_FEEDS -eq 0 ]]; then
@@ -164,7 +168,9 @@ echo -e "$ICON_SUCCESS feeds 安装完成。"
 # 注释自定义 feeds
 section "注释自定义 feeds"
 info "注释自定义 feeds..."
-sed -i "s|^$WIKJXWRT_ENTRY|#$WIKJXWRT_ENTRY|" "$FEEDS_FILE" || error "注释自定义 feeds 失败！"
+for entry in "$WIKJXWRT_ENTRY" "$PASSWALL_PACKAGES_ENTRY" "$PASSWALL_ENTRY"; do
+    sed -i "s|^$entry|#$entry|" "$FEEDS_FILE" || error "注释自定义 feeds 失败: $entry"
+done
 echo -e "$ICON_SUCCESS 注释自定义 feeds 完成。"
 
 # 配置 .config
