@@ -83,7 +83,7 @@ done
 # 环境检查
 section "环境检查"
 info "检查必要工具..."
-for tool in git make sed curl top ps vmstat; do
+for tool in git make sed curl; do
     if command -v "$tool" &>/dev/null; then
         echo -e "$ICON_SUCCESS 工具已安装: $tool"
     else
@@ -96,22 +96,8 @@ echo -e "$ICON_SUCCESS 环境检查通过。"
 # 记录开始时间
 START_TIME=$(date +%s)
 
-# 监控资源使用的函数
-monitor_resources() {
-    echo -e "\n${CYAN}资源使用情况:${RESET}"
-    # 显示 top 命令输出（CPU、内存等使用情况）
-    top -n 1 -b | head -n 20
-    echo -e "\n${CYAN}当前进程资源使用:${RESET}"
-    # 显示当前脚本的资源占用情况
-    ps -aux | grep -E "\b$(basename $0)\b" | head -n 5
-    echo -e "\n${CYAN}系统整体资源统计:${RESET}"
-    # 显示系统资源（虚拟内存、交换空间等）
-    vmstat 1 5
-}
-
 # 克隆 OpenWrt 源码
 section "克隆 OpenWrt 源码"
-monitor_resources  # 在每个步骤前显示资源使用情况
 if [[ ! -d "openwrt" ]]; then
     info "克隆 OpenWrt 源码仓库..."
     git clone "$OPENWRT_REPO" openwrt || error "克隆 OpenWrt 仓库失败！"
@@ -125,7 +111,6 @@ cd openwrt || error "进入 openwrt 文件夹失败！"
 
 # 添加自定义 feeds
 section "自定义 feeds 处理"
-monitor_resources  # 显示资源使用
 info "检查和修改 $FEEDS_FILE..."
 for entry in "$WIKJXWRT_ENTRY" "$PASSWALL_PACKAGES_ENTRY" "$PASSWALL_ENTRY"; do
     if ! grep -q "^$entry" "$FEEDS_FILE"; then
@@ -147,7 +132,6 @@ fi
 
 # 替换 coremark
 section "替换 coremark"
-monitor_resources
 info "删除默认 coremark 并替换为自定义版本..."
 rm -rf feeds/packages/utils/coremark
 git clone https://github.com/wixxm/wikjxwrt-coremark feeds/packages/utils/coremark || error "克隆 coremark 仓库失败！"
@@ -155,7 +139,6 @@ echo -e "$ICON_SUCCESS coremark 替换完成。"
 
 # 配置 sysinfo.sh
 section "配置 sysinfo.sh"
-monitor_resources
 info "下载并配置 sysinfo.sh..."
 git clone "$WIKJXWRT_SSH_REPO" temp_ssh_repo || error "克隆 $WIKJXWRT_SSH_REPO 仓库失败！"
 mkdir -p "$(dirname $SYSINFO_TARGET)"
@@ -165,14 +148,12 @@ echo -e "$ICON_SUCCESS sysinfo.sh 配置完成。"
 
 # 添加 Turbo ACC
 section "添加 Turbo ACC"
-monitor_resources
 info "下载并执行 Turbo ACC 安装脚本..."
 curl -sSL "$TURBOACC_SCRIPT" -o add_turboacc.sh && bash add_turboacc.sh || error "添加 Turbo ACC 失败！"
 echo -e "$ICON_SUCCESS Turbo ACC 添加完成。"
 
 # 替换 v2ray-geodata
 section "替换 v2ray-geodata"
-monitor_resources
 info "删除默认的 v2ray-geodata..."
 rm -rf feeds/packages/net/v2ray-geodata || warn "删除默认 v2ray-geodata 失败，可能不存在。"
 info "克隆新的 v2ray-geodata 仓库..."
@@ -181,7 +162,6 @@ echo -e "$ICON_SUCCESS v2ray-geodata 替换完成。"
 
 # 替换 golang
 section "替换 golang"
-monitor_resources
 info "删除默认 golang 并替换为自定义版本..."
 rm -rf feeds/packages/lang/golang
 git clone https://github.com/wixxm/WikjxWrt-golang feeds/packages/lang/golang || error "克隆 golang 仓库失败！"
@@ -189,7 +169,6 @@ echo -e "$ICON_SUCCESS golang 替换完成。"
 
 # 安装 feeds
 section "安装 feeds"
-monitor_resources
 info "安装 feeds..."
 ./scripts/feeds install -a || error "第一次 feeds 安装失败！"
 info "再次安装 feeds..."
@@ -198,7 +177,6 @@ echo -e "$ICON_SUCCESS feeds 安装完成。"
 
 # 注释自定义 feeds
 section "注释自定义 feeds"
-monitor_resources
 info "注释自定义 feeds..."
 for entry in "$WIKJXWRT_ENTRY" "$PASSWALL_PACKAGES_ENTRY" "$PASSWALL_ENTRY"; do
     sed -i "s|^$entry|#$entry|" "$FEEDS_FILE" || error "注释自定义 feeds 失败: $entry"
@@ -207,7 +185,6 @@ echo -e "$ICON_SUCCESS 注释自定义 feeds 完成。"
 
 # 配置 .config
 section "配置 .config 文件"
-monitor_resources
 info "下载并配置 .config..."
 git clone "$WIKJXWRTR_CONFIG_REPO" temp_config_repo || error "克隆配置仓库失败！"
 mv temp_config_repo/6.6/.config ./ || error "移动 .config 文件失败！"
@@ -217,7 +194,6 @@ echo -e "$ICON_SUCCESS .config 配置完成。"
 
 # 下载编译所需文件
 section "下载编译所需文件"
-monitor_resources
 info "下载依赖文件..."
 make download -j"$CORES" || error "依赖文件下载失败！"
 echo -e "$ICON_SUCCESS 依赖文件下载完成。"
@@ -225,7 +201,6 @@ echo -e "$ICON_SUCCESS 依赖文件下载完成。"
 # 编译 OpenWrt
 if [[ $SKIP_COMPILE -eq 0 ]]; then
     section "编译 OpenWrt"
-    monitor_resources
     info "开始编译 OpenWrt..."
     make V=s -j"$CORES" || error "编译过程中发生错误！"
     echo -e "$ICON_SUCCESS 编译完成！"
