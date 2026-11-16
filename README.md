@@ -1,10 +1,14 @@
-### 🎉自动化完成编译🎉（目前只维护24.10）
+### 🎉自动化完成编译🎉（目前只维护25.12）
 
 ### 若主机配置不佳请在命令结尾自定义编译核心数 -j 1（代表只用一个核心编译） 🎉
 
 ### ✨ 一键配置编译环境
 ```
 curl -sSL https://raw.githubusercontent.com/wixxm/wikjxwrt-auto/main/hj.sh -o hj.sh && bash hj.sh
+```
+### 🌈 一键完全开始 25.12分支（从拉库开始）
+```
+curl -sSL https://raw.githubusercontent.com/wixxm/wikjxwrt-auto/main/go-25.12.sh -o go-25.12.sh && bash go-25.12.sh
 ```
 ### 🌈 一键完全开始 24.10分支（从拉库开始）
 ```
